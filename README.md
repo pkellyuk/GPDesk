@@ -32,6 +32,8 @@ This happens because GPDesk:
 
 **Best option if concerned:** [Build from source](#building-from-source) yourself using the exact commands shown below. You'll see it's just standard C code with no malicious behavior.
 
+**Future plans:** We are applying for free code signing through [SignPath Foundation](https://signpath.org/) which will eliminate these warnings. Code signing certificates typically cost $300-500/year, but SignPath provides them free for open source projects.
+
 ## Features
 
 ### Desktop Control Mode
@@ -97,6 +99,32 @@ The project follows a modular design with separate systems for:
 - **Configuration** (`src/config/`): Settings management
 
 All code follows Allman brace style with comprehensive logging and null-checking.
+
+## Code Signing
+
+This project is working towards getting free code signing through [SignPath Foundation](https://signpath.org/), which provides code signing certificates at no cost to open source projects.
+
+### Why Code Signing Matters
+
+Code signing eliminates false positive virus warnings from Windows Defender and browsers, making it easier for users to download and trust the software.
+
+### Current Status
+
+- ✅ GitHub Actions CI/CD workflow created
+- ✅ Automated builds working
+- ⏳ Applying for SignPath Foundation certificate
+- ⏳ Waiting for approval
+
+Once approved, all releases will be automatically signed during the build process.
+
+### For Contributors
+
+The signing process is fully automated through GitHub Actions. When code is merged to `main` or a version tag is pushed, the workflow:
+1. Builds the executable
+2. Submits to SignPath for signing (once configured)
+3. Creates a GitHub release with the signed binary
+
+No manual signing steps are required.
 
 ## License
 
