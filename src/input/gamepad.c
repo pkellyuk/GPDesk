@@ -632,19 +632,26 @@ void Input_ExecuteAction(GamepadAction action, const char* customCommand)
                 }
                 else
                 {
-                    // Launch the on-screen keyboard with full path
+                    // Launch OSK as medium integrity level (non-elevated) so it can type properly
+                    // When launched from an admin process, OSK needs to run at medium IL to function correctly
                     char oskPath[MAX_PATH];
                     GetSystemDirectoryA(oskPath, MAX_PATH);
                     strcat(oskPath, "\\osk.exe");
 
-                    HINSTANCE hInst = ShellExecuteA(NULL, "open", oskPath, NULL, NULL, SW_SHOW);
+                    // Use explorer.exe to launch OSK at medium integrity level
+                    // This allows OSK to work properly even when launched from elevated process
+                    char explorerPath[MAX_PATH];
+                    GetWindowsDirectoryA(explorerPath, MAX_PATH);
+                    strcat(explorerPath, "\\explorer.exe");
+
+                    HINSTANCE hInst = ShellExecuteA(NULL, "open", explorerPath, oskPath, NULL, SW_HIDE);
                     if ((INT_PTR)hInst > 32)
                     {
-                        LOG_DEBUG("On-screen keyboard launched: %s", oskPath);
+                        LOG_DEBUG("On-screen keyboard launched via explorer: %s", oskPath);
                     }
                     else
                     {
-                        LOG_ERROR("Failed to launch OSK, error: %d", (int)(INT_PTR)hInst);
+                        LOG_ERROR("Failed to launch OSK via explorer, error: %d", (int)(INT_PTR)hInst);
                     }
                 }
 
