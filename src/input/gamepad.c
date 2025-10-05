@@ -7,12 +7,10 @@ InputSystem g_inputSystem = {0};
 
 // Default button mappings
 // NOTE: Xbox/Guide button cannot be detected via XInput (system reserves it)
-// Using START button for overlay toggle instead
+// Using START + BACK button combination for overlay toggle instead
 static ButtonMapping g_buttonMappings[] =
 {
-    {BUTTON_START, ACTION_TOGGLE_OVERLAY, "", false, 0},  // Xbox button replacement
-    // D-pad now used for line-by-line scrolling (handled in Input_UpdateMouseControl)
-    {BUTTON_BACK, ACTION_VOLUME_MUTE, "", false, 0},
+    // START and BACK buttons are handled separately for the combination check
     {BUTTON_Y, ACTION_POWER_SLEEP, "", true, 2000}, // Disabled
     {BUTTON_X, ACTION_TOGGLE_OSK, "", false, 0},
     {BUTTON_LEFT_SHOULDER, ACTION_BROWSER_BACK, "", false, 0},
@@ -469,8 +467,27 @@ void Input_ProcessActions(void)
         return;
     }
 
-    // Special handling for A button - toggle mode when overlay is visible
+    // Special handling for START + BACK combination - toggle overlay
     extern AppState g_appState;
+    static bool wasCombinationPressed = false;
+
+    if (Input_IsButtonPressed(activeController, BUTTON_START) &&
+        Input_IsButtonPressed(activeController, BUTTON_BACK))
+    {
+        // Check if this is the first frame both are pressed
+        if (!wasCombinationPressed)
+        {
+            LOG_DEBUG("START + BACK combination pressed, toggling overlay");
+            App_ToggleOverlay();
+            wasCombinationPressed = true;
+        }
+    }
+    else
+    {
+        wasCombinationPressed = false;
+    }
+
+    // Special handling for A button - toggle mode when overlay is visible
     if (g_appState.isOverlayVisible && Input_IsButtonJustPressed(activeController, BUTTON_A))
     {
         App_ToggleMode();
