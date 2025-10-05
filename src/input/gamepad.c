@@ -14,7 +14,9 @@ static ButtonMapping g_buttonMappings[] =
     // D-pad now used for line-by-line scrolling (handled in Input_UpdateMouseControl)
     {BUTTON_BACK, ACTION_VOLUME_MUTE, "", false, 0},
     {BUTTON_Y, ACTION_POWER_SLEEP, "", true, 2000}, // Disabled
-    {BUTTON_X, ACTION_TV_POWER, "", false, 0},
+    {BUTTON_X, ACTION_TOGGLE_OSK, "", false, 0},
+    {BUTTON_LEFT_SHOULDER, ACTION_BROWSER_BACK, "", false, 0},
+    {BUTTON_RIGHT_SHOULDER, ACTION_BROWSER_FORWARD, "", false, 0},
     // A button handled separately for mode toggle when overlay is visible
     {BUTTON_B, ACTION_NONE, "", false, 0}
 };
@@ -564,7 +566,75 @@ void Input_ExecuteAction(GamepadAction action, const char* customCommand)
                 App_ExecuteCommand(customCommand);
             }
             break;
-            
+
+        case ACTION_BROWSER_BACK:
+            {
+                INPUT input = {0};
+                input.type = INPUT_KEYBOARD;
+                input.ki.wVk = VK_BROWSER_BACK;
+                SendInput(1, &input, sizeof(INPUT));
+                input.ki.dwFlags = KEYEVENTF_KEYUP;
+                SendInput(1, &input, sizeof(INPUT));
+                LOG_DEBUG("Browser back");
+            }
+            break;
+
+        case ACTION_BROWSER_FORWARD:
+            {
+                INPUT input = {0};
+                input.type = INPUT_KEYBOARD;
+                input.ki.wVk = VK_BROWSER_FORWARD;
+                SendInput(1, &input, sizeof(INPUT));
+                input.ki.dwFlags = KEYEVENTF_KEYUP;
+                SendInput(1, &input, sizeof(INPUT));
+                LOG_DEBUG("Browser forward");
+            }
+            break;
+
+        case ACTION_TOGGLE_OSK:
+            {
+                LOG_ENTRY_SIMPLE();
+
+                // Try to find OSK window using multiple possible class names
+                HWND hOSK = FindWindowA("OSKMainClass", NULL);
+                if (!hOSK)
+                {
+                    hOSK = FindWindowA("OSKMainClass", "On-Screen Keyboard");
+                }
+                if (!hOSK)
+                {
+                    hOSK = FindWindowW(L"OSKMainClass", NULL);
+                }
+
+                if (hOSK && IsWindow(hOSK))
+                {
+                    // If OSK is already running, close it
+                    LOG_DEBUG("Found OSK window handle: %p", hOSK);
+                    SendMessageA(hOSK, WM_SYSCOMMAND, SC_CLOSE, 0);
+                    LOG_DEBUG("On-screen keyboard close command sent");
+                }
+                else
+                {
+                    // Launch the on-screen keyboard with full path
+                    char oskPath[MAX_PATH];
+                    GetSystemDirectoryA(oskPath, MAX_PATH);
+                    strcat(oskPath, "\\osk.exe");
+
+                    HINSTANCE hInst = ShellExecuteA(NULL, "open", oskPath, NULL, NULL, SW_SHOW);
+                    if ((INT_PTR)hInst > 32)
+                    {
+                        LOG_DEBUG("On-screen keyboard launched: %s", oskPath);
+                    }
+                    else
+                    {
+                        LOG_ERROR("Failed to launch OSK, error: %d", (int)(INT_PTR)hInst);
+                    }
+                }
+
+                LOG_EXIT_SIMPLE();
+            }
+            break;
+
         default:
             LOG_WARNING("Unknown action: %d", action);
             break;
