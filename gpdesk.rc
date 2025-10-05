@@ -1,6 +1,9 @@
 // GPDesk Resource File
 #include <windows.h>
 
+// Application Icon
+1 ICON "gpdesk.ico"
+
 // Application Manifest
 1 RT_MANIFEST "gpdesk.manifest"
 

@@ -15,6 +15,7 @@
 #define ID_TRAY_EXIT 2001
 #define ID_TRAY_SHOW 2002
 #define ID_TRAY_CONFIG 2003
+#define ID_GITHUB_LINK 2004
 
 // Control mode enumeration
 typedef enum

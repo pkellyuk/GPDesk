@@ -285,7 +285,13 @@ bool App_CreateSystemTray(void)
     g_appState.nid.uID = ID_TRAY_ICON;
     g_appState.nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_appState.nid.uCallbackMessage = WM_TRAYICON;
-    g_appState.nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    // Load icon from resources (ID 1 from gpdesk.rc)
+    g_appState.nid.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+    if (!g_appState.nid.hIcon)
+    {
+        // Fallback to default icon if custom icon fails to load
+        g_appState.nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    }
     strcpy_s(g_appState.nid.szTip, sizeof(g_appState.nid.szTip), APP_NAME " - Gamepad PC Control");
     
     if (!Shell_NotifyIcon(NIM_ADD, &g_appState.nid))
@@ -302,23 +308,79 @@ bool App_CreateSystemTray(void)
 
 LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    static HWND hGitHubLink = NULL;
+
     switch (uMsg)
     {
         case WM_CREATE:
             LOG_DEBUG("Main window WM_CREATE received");
+            // Create clickable GitHub link
+            hGitHubLink = CreateWindowA("BUTTON", "https://github.com/pkellyuk/GPDesk",
+                WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+                150, 200, 300, 30,
+                hwnd, (HMENU)ID_GITHUB_LINK, g_appState.hInstance, NULL);
             return 0;
-            
+
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+
+            // White background
+            HBRUSH bgBrush = CreateSolidBrush(RGB(255, 255, 255));
+            FillRect(hdc, &rect, bgBrush);
+            DeleteObject(bgBrush);
+
+            // Title
+            HFONT hTitleFont = CreateFontA(32, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+            HFONT hOldFont = SelectObject(hdc, hTitleFont);
+
+            SetTextColor(hdc, RGB(64, 128, 192));
+            SetBkMode(hdc, TRANSPARENT);
+            RECT titleRect = {20, 30, rect.right - 20, 80};
+            DrawTextA(hdc, "GPDesk", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+            SelectObject(hdc, hOldFont);
+            DeleteObject(hTitleFont);
+
+            // Description
+            HFONT hNormalFont = CreateFontA(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+            SelectObject(hdc, hNormalFont);
+
+            SetTextColor(hdc, RGB(60, 60, 60));
+            RECT descRect = {20, 90, rect.right - 20, 150};
+            DrawTextA(hdc, "Gamepad PC Control System\n\nPress START + BACK to show overlay", -1,
+                &descRect, DT_CENTER | DT_WORDBREAK);
+
+            // GitHub label
+            RECT githubLabel = {20, 170, rect.right - 20, 190};
+            DrawTextA(hdc, "Visit project on GitHub:", -1, &githubLabel, DT_CENTER | DT_SINGLELINE);
+
+            SelectObject(hdc, hOldFont);
+            DeleteObject(hNormalFont);
+
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+
         case WM_CLOSE:
             LOG_DEBUG("Main window WM_CLOSE received - minimizing to tray");
             App_MinimizeToTray();
             return 0;
-            
+
         case WM_DESTROY:
             LOG_DEBUG("Main window WM_DESTROY received");
             g_appState.isRunning = false;
             PostQuitMessage(0);
             return 0;
-            
+
         case WM_TRAYICON:
             if (lParam == WM_RBUTTONUP)
             {
@@ -331,26 +393,30 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 App_RestoreFromTray();
             }
             return 0;
-            
+
         case WM_COMMAND:
             switch (LOWORD(wParam))
             {
                 case ID_TRAY_SHOW:
                     App_RestoreFromTray();
                     break;
-                    
+
                 case ID_TRAY_EXIT:
                     g_appState.isRunning = false;
                     DestroyWindow(hwnd);
                     break;
-                    
+
                 case ID_TRAY_CONFIG:
                     // TODO: Show configuration window
                     LOG_INFO("Configuration requested");
                     break;
+
+                case ID_GITHUB_LINK:
+                    ShellExecuteA(NULL, "open", "https://github.com/pkellyuk/GPDesk", NULL, NULL, SW_SHOW);
+                    break;
             }
             return 0;
-            
+
         default:
             return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
@@ -472,7 +538,8 @@ void App_ShowTrayMenu(HWND hwnd, POINT pt)
     }
     
     AppendMenu(hMenu, MF_STRING, ID_TRAY_SHOW, "&Show GPDesk");
-    AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIG, "&Configuration");
+    // Configuration menu hidden for now (not implemented)
+    // AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIG, "&Configuration");
     AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT, "E&xit");
     
