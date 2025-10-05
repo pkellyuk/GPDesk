@@ -3,8 +3,9 @@
 
 # Compiler settings
 CC = gcc
+RC = windres
 CFLAGS = -std=c99 -Wall -Wextra -Iinclude -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601
-LDFLAGS = -lkernel32 -luser32 -lgdi32 -lcomctl32 -lole32 -loleaut32 -luuid -lshell32 -ladvapi32 -lwinmm -lxinput -lpowrprof -ldxva2
+LDFLAGS = -lkernel32 -luser32 -lgdi32 -lcomctl32 -lole32 -loleaut32 -luuid -lshell32 -ladvapi32 -lwinmm -lxinput -lpowrprof -ldxva2 -mwindows
 
 # Debug and release settings
 DEBUG_CFLAGS = $(CFLAGS) -g -DDEBUG -D_DEBUG
@@ -25,13 +26,17 @@ CONFIG_SOURCES = $(SRC_DIR)/config/config.c
 
 ALL_SOURCES = $(CORE_SOURCES) $(INPUT_SOURCES) $(SYSTEM_SOURCES) $(CONFIG_SOURCES)
 
+# Resource files
+RESOURCE_FILE = gpdesk.rc
+RESOURCE_OBJECT = $(OBJ_DIR)/gpdesk.res
+
 # Object files
 CORE_OBJECTS = $(CORE_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 INPUT_OBJECTS = $(INPUT_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 SYSTEM_OBJECTS = $(SYSTEM_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 CONFIG_OBJECTS = $(CONFIG_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-ALL_OBJECTS = $(CORE_OBJECTS) $(INPUT_OBJECTS) $(SYSTEM_OBJECTS) $(CONFIG_OBJECTS)
+ALL_OBJECTS = $(CORE_OBJECTS) $(INPUT_OBJECTS) $(SYSTEM_OBJECTS) $(CONFIG_OBJECTS) $(RESOURCE_OBJECT)
 
 # Target executable
 TARGET = $(BIN_DIR)/gpdesk.exe
@@ -85,6 +90,11 @@ $(OBJ_DIR)/system/%.o: $(SRC_DIR)/system/%.c
 $(OBJ_DIR)/config/%.o: $(SRC_DIR)/config/%.c
 	@echo Compiling $<...
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile resource file
+$(RESOURCE_OBJECT): $(RESOURCE_FILE) gpdesk.manifest
+	@echo Compiling resource file...
+	$(RC) -i $(RESOURCE_FILE) -o $@
 
 # Clean build artifacts
 clean:
