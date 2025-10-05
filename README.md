@@ -8,6 +8,21 @@ GPDesk is a C/Win32 application that allows you to control your PC using a gamep
 
 Simply download `gpdesk.exe` and run it. The application will appear in your system tray.
 
+### ⚠️ About Security Warnings
+
+Browsers and Windows may show security warnings because this executable is:
+- **Not code-signed** (code signing certificates cost $300-500/year)
+- **New to Windows SmartScreen** (hasn't been downloaded by enough users yet)
+
+**This is a false positive.** The source code is completely open and available for review in this repository.
+
+**To download safely:**
+1. Click the download link
+2. Your browser may warn you - click **"Keep"** or **"Download anyway"**
+3. Windows SmartScreen may appear - click **"More info"** then **"Run anyway"**
+
+**Alternative:** [Build from source](#building-from-source) yourself to avoid any warnings.
+
 ## Features
 
 ### Desktop Control Mode
