@@ -1,44 +1,83 @@
 # GPDesk - Gamepad PC Control System
 
-GPDesk is a C/Win32 application that allows you to control your PC and TV using a gamepad, similar to ASUS Armory Crate SE. It provides system-wide gamepad control for volume, brightness, power management, application launching, and more.
+GPDesk is a C/Win32 application that allows you to control your PC using a gamepad. It provides desktop mouse control, browser navigation, system shortcuts, and more - all from your Xbox-compatible controller.
+
+## Download
+
+**[Download the latest release (v1.0.0)](https://github.com/pkellyuk/GPDesk/releases/latest)** - No compilation required!
+
+Simply download `gpdesk.exe` and run it. The application will appear in your system tray.
 
 ## Features
 
-### Core Functionality
+### Desktop Control Mode
+- **Right Stick**: Mouse movement
+- **Left Stick**: Smooth scrolling (vertical)
+- **D-Pad**: Line-by-line scrolling (up/down)
+- **Right Trigger**: Left mouse click
+- **Left Trigger**: Right mouse click
+
+### Button Controls
+- **START + BACK**: Toggle overlay (press both simultaneously)
+- **A Button**: Toggle between Desktop and TV modes (when overlay is visible)
+- **X Button**: Show/hide Windows On-Screen Keyboard
+- **Y Button (Hold 2s)**: Put PC to sleep
+- **Left Shoulder**: Browser back
+- **Right Shoulder**: Browser forward
+
+### System Features
 - **XInput Gamepad Support**: Full support for Xbox controllers and compatible gamepads
-- **System Control**: Volume, brightness, power management (shutdown, sleep, hibernate)
-- **Application Control**: Launch applications, execute custom commands
-- **Overlay Interface**: On-screen display for gamepad navigation
-- **System Tray Integration**: Minimize to tray, context menu controls
-- **Configuration Management**: Registry and file-based settings storage
+- **System Tray Integration**: Runs in background, accessible from system tray
+- **Automatic Gamepad Detection**: Instantly detects when controller is connected
+- **Low Resource Usage**: Minimal CPU and memory footprint
 
-### Default Button Mapping
-- **Start**: Toggle overlay
-- **D-Pad Up/Down**: Volume up/down
-- **D-Pad Left/Right**: Brightness down/up  
-- **Back**: Mute toggle
-- **Y (Hold 2s)**: Sleep mode
-- **X**: TV power control
-- **A/B**: Configurable actions
+## Administrator Privileges
 
-## Building
+GPDesk requests administrator privileges for the following reasons:
+- **System-wide input injection**: Required to send mouse and keyboard events to any application, including elevated programs
+- **Task Manager compatibility**: Allows gamepad control to work even when Task Manager or other elevated applications are in focus
+- **Power management**: Sleep and hibernation features require elevated permissions
 
-```bash
-# Debug build
-make debug
-
-# Release build  
-make release
-
-# Build and run
-make run
-```
+The application does not modify system files or settings without user interaction.
 
 ## Requirements
-- Windows 7 or later
-- XInput-compatible gamepad
-- MinGW-w64 or Visual Studio Build Tools
-- Administrator privileges for system control
+
+- Windows 10/11
+- XInput-compatible gamepad (Xbox 360, Xbox One, Xbox Series X/S controllers)
+- No additional dependencies required
+
+## Building from Source
+
+```bash
+# Using GCC (MinGW)
+gcc -o build/bin/gpdesk.exe -Iinclude src/core/*.c src/input/*.c src/system/*.c src/config/*.c -lkernel32 -luser32 -lgdi32 -lcomctl32 -lole32 -loleaut32 -luuid -lshell32 -ladvapi32 -lwinmm -lxinput -lpowrprof -ldxva2 -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0601 -std=c17 -Wall
+
+# Or use the build script
+build.bat
+```
+
+## Usage
+
+1. Run `gpdesk.exe`
+2. The application icon will appear in your system tray
+3. Connect your Xbox-compatible gamepad
+4. Press **START + BACK** together to show the overlay
+5. Use your gamepad to control the desktop!
 
 ## Architecture
-The project follows a modular design with separate systems for input handling, system control, configuration management, and logging. All code follows Allman brace style with comprehensive logging and null-checking as specified in your requirements.
+
+The project follows a modular design with separate systems for:
+- **Input Handling** (`src/input/`): XInput gamepad state management and button mapping
+- **System Control** (`src/system/`): Audio, power, display, and application control
+- **Core** (`src/core/`): Main application loop and logging
+- **Configuration** (`src/config/`): Settings management
+
+All code follows Allman brace style with comprehensive logging and null-checking.
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+---
+
+🤖 Built with [Claude Code](https://claude.com/claude-code)
