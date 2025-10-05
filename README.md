@@ -8,20 +8,29 @@ GPDesk is a C/Win32 application that allows you to control your PC using a gamep
 
 Simply download `gpdesk.exe` and run it. The application will appear in your system tray.
 
-### ⚠️ About Security Warnings
+### ⚠️ About Security Warnings (FALSE POSITIVE)
 
-Browsers and Windows may show security warnings because this executable is:
-- **Not code-signed** (code signing certificates cost $300-500/year)
-- **New to Windows SmartScreen** (hasn't been downloaded by enough users yet)
+**Windows Defender may flag this as `Trojan:Win32/Wacatac.C!ml` - This is a FALSE POSITIVE.**
 
-**This is a false positive.** The source code is completely open and available for review in this repository.
+This happens because GPDesk:
+- **Uses SendInput() API** - Required for mouse/keyboard control from gamepad
+- **Requests admin privileges** - Needed to work with elevated applications
+- **Is unsigned** - Code signing certificates cost $300-500/year
+- **Is new** - Not yet recognized by Windows SmartScreen
+
+**Why this is safe:**
+- 🔓 **100% open source** - All code is visible in this repository
+- 🛡️ **No network activity** - The app doesn't connect to the internet
+- 📝 **Simple C code** - Easy to audit and verify
+- 🎮 **Legitimate purpose** - Uses standard Windows APIs for gamepad input control
 
 **To download safely:**
 1. Click the download link
 2. Your browser may warn you - click **"Keep"** or **"Download anyway"**
 3. Windows SmartScreen may appear - click **"More info"** then **"Run anyway"**
+4. Windows Defender may quarantine it - add an exclusion for the file
 
-**Alternative:** [Build from source](#building-from-source) yourself to avoid any warnings.
+**Best option if concerned:** [Build from source](#building-from-source) yourself using the exact commands shown below. You'll see it's just standard C code with no malicious behavior.
 
 ## Features
 
