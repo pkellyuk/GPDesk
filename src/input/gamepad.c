@@ -11,10 +11,7 @@ InputSystem g_inputSystem = {0};
 static ButtonMapping g_buttonMappings[] =
 {
     {BUTTON_START, ACTION_TOGGLE_OVERLAY, "", false, 0},  // Xbox button replacement
-    {BUTTON_DPAD_UP, ACTION_VOLUME_UP, "", false, 0},
-    {BUTTON_DPAD_DOWN, ACTION_VOLUME_DOWN, "", false, 0},
-    {BUTTON_DPAD_LEFT, ACTION_BRIGHTNESS_DOWN, "", false, 0},
-    {BUTTON_DPAD_RIGHT, ACTION_BRIGHTNESS_UP, "", false, 0},
+    // D-pad now used for line-by-line scrolling (handled in Input_UpdateMouseControl)
     {BUTTON_BACK, ACTION_VOLUME_MUTE, "", false, 0},
     {BUTTON_Y, ACTION_POWER_SLEEP, "", true, 2000}, // Disabled
     {BUTTON_X, ACTION_TV_POWER, "", false, 0},
@@ -595,12 +592,12 @@ void Input_UpdateMouseControl(int controllerIndex)
         return;
     }
 
-    // Get right stick position
-    float stickX, stickY;
-    Input_GetRightStick(controllerIndex, &stickX, &stickY);
+    // Get right stick position for mouse movement
+    float rightStickX, rightStickY;
+    Input_GetRightStick(controllerIndex, &rightStickX, &rightStickY);
 
     // Only move mouse if stick is moved significantly
-    if (stickX != 0.0f || stickY != 0.0f)
+    if (rightStickX != 0.0f || rightStickY != 0.0f)
     {
         // Get current cursor position
         POINT cursorPos;
@@ -612,8 +609,8 @@ void Input_UpdateMouseControl(int controllerIndex)
         // Calculate mouse movement (scale for sensitivity)
         // Higher sensitivity for faster movement
         float sensitivity = 20.0f;
-        int deltaX = (int)(stickX * sensitivity);
-        int deltaY = (int)(-stickY * sensitivity); // Invert Y axis for natural movement
+        int deltaX = (int)(rightStickX * sensitivity);
+        int deltaY = (int)(-rightStickY * sensitivity); // Invert Y axis for natural movement
 
         // Calculate new position
         int newX = cursorPos.x + deltaX;
@@ -631,6 +628,69 @@ void Input_UpdateMouseControl(int controllerIndex)
         // Move the cursor
         SetCursorPos(newX, newY);
     }
+
+    // Get left stick position for smooth scrolling
+    float leftStickX, leftStickY;
+    Input_GetLeftStick(controllerIndex, &leftStickX, &leftStickY);
+
+    // Smooth scrolling with left stick (vertical only)
+    if (leftStickY != 0.0f)
+    {
+        // Scale the scroll amount based on stick position
+        // WHEEL_DELTA is 120 units per "notch"
+        // Use float for accumulation to allow smooth scrolling
+        static float scrollAccumulator = 0.0f;
+
+        // Sensitivity for smooth scrolling - higher value = faster scroll
+        float scrollSensitivity = 15.0f;
+        scrollAccumulator += leftStickY * scrollSensitivity;
+
+        // Only send scroll events when we've accumulated enough
+        if (scrollAccumulator >= 1.0f || scrollAccumulator <= -1.0f)
+        {
+            int scrollAmount = (int)scrollAccumulator;
+
+            INPUT input = {0};
+            input.type = INPUT_MOUSE;
+            input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+            input.mi.mouseData = scrollAmount * (WHEEL_DELTA / 10); // Divide for finer control
+            SendInput(1, &input, sizeof(INPUT));
+
+            scrollAccumulator -= (float)scrollAmount;
+        }
+    }
+
+    // D-pad for line-by-line scrolling
+    static bool wasDpadUpPressed = false;
+    static bool wasDpadDownPressed = false;
+
+    bool dpadUp = Input_IsButtonPressed(controllerIndex, BUTTON_DPAD_UP);
+    bool dpadDown = Input_IsButtonPressed(controllerIndex, BUTTON_DPAD_DOWN);
+
+    // Scroll up (one line at a time)
+    if (dpadUp && !wasDpadUpPressed)
+    {
+        INPUT input = {0};
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        input.mi.mouseData = WHEEL_DELTA / 3; // One line
+        SendInput(1, &input, sizeof(INPUT));
+        LOG_DEBUG("D-pad scroll up (line-by-line)");
+    }
+
+    // Scroll down (one line at a time)
+    if (dpadDown && !wasDpadDownPressed)
+    {
+        INPUT input = {0};
+        input.type = INPUT_MOUSE;
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        input.mi.mouseData = -(WHEEL_DELTA / 3); // One line
+        SendInput(1, &input, sizeof(INPUT));
+        LOG_DEBUG("D-pad scroll down (line-by-line)");
+    }
+
+    wasDpadUpPressed = dpadUp;
+    wasDpadDownPressed = dpadDown;
 
     // Handle mouse clicks with triggers or buttons
     // SWAPPED: Right trigger = left click, Left trigger = right click
