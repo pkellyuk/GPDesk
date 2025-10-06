@@ -1,9 +1,67 @@
 #include "input.h"
 #include "gpdesk.h"
 #include "system_control.h"
+#include <dwmapi.h>
 
 // Global input system
 InputSystem g_inputSystem = {0};
+
+// Helper function to detect if a fullscreen application (game) is running
+static bool Input_IsFullscreenAppRunning(void)
+{
+    LOG_ENTRY_SIMPLE();
+
+    // Get the foreground window
+    HWND hForeground = GetForegroundWindow();
+    if (!hForeground)
+    {
+        LOG_EXIT("return=false (no foreground window)");
+        return false;
+    }
+
+    // Check if window is fullscreen by comparing its size to the screen size
+    RECT windowRect;
+    if (!GetWindowRect(hForeground, &windowRect))
+    {
+        LOG_EXIT("return=false (GetWindowRect failed)");
+        return false;
+    }
+
+    // Get the monitor the window is on
+    HMONITOR hMonitor = MonitorFromWindow(hForeground, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitorInfo = {0};
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+
+    if (!GetMonitorInfo(hMonitor, &monitorInfo))
+    {
+        LOG_EXIT("return=false (GetMonitorInfo failed)");
+        return false;
+    }
+
+    // Check if window covers the entire monitor (fullscreen)
+    bool isFullscreen = (windowRect.left <= monitorInfo.rcMonitor.left &&
+                        windowRect.top <= monitorInfo.rcMonitor.top &&
+                        windowRect.right >= monitorInfo.rcMonitor.right &&
+                        windowRect.bottom >= monitorInfo.rcMonitor.bottom);
+
+    if (isFullscreen)
+    {
+        // Additional check: verify it's not our overlay or main window
+        extern AppState g_appState;
+        if (hForeground == g_appState.hOverlayWindow || hForeground == g_appState.hMainWindow)
+        {
+            LOG_EXIT("return=false (is GPDesk window)");
+            return false;
+        }
+
+        LOG_DEBUG("Fullscreen application detected");
+        LOG_EXIT("return=true");
+        return true;
+    }
+
+    LOG_EXIT("return=false");
+    return false;
+}
 
 // Default button mappings
 // NOTE: Xbox/Guide button cannot be detected via XInput (system reserves it)
@@ -611,6 +669,14 @@ void Input_ExecuteAction(GamepadAction action, const char* customCommand)
         case ACTION_TOGGLE_OSK:
             {
                 LOG_ENTRY_SIMPLE();
+
+                // Don't allow OSK toggle when a fullscreen app (game) is running
+                if (Input_IsFullscreenAppRunning())
+                {
+                    LOG_DEBUG("Fullscreen app detected, ignoring OSK toggle");
+                    LOG_EXIT_SIMPLE();
+                    break;
+                }
 
                 // Try to find OSK window using multiple possible class names
                 HWND hOSK = FindWindowA("OSKMainClass", NULL);
