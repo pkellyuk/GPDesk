@@ -8,7 +8,7 @@
 
 // Application constants
 #define APP_NAME "GPDesk"
-#define APP_VERSION "1.0.0"
+#define APP_VERSION "1.1.0"
 #define APP_CLASS_NAME "GPDeskMainWindow"
 #define WM_TRAYICON (WM_USER + 1)
 #define ID_TRAY_ICON 1
